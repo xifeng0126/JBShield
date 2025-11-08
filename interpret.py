@@ -75,7 +75,7 @@ def interpret(model_name):
 
     # Interpret the embeddings
     # Save the results in interpre_results/{model_name}.txt
-    with open("interpret_results/{}.txt".format(model_name), "a") as f:
+    with open("test_interpret_results/{}.txt".format(model_name), "a") as f:
         for layer_n in tqdm(range(len(harmful_embeddings))):
             f.write(
                 "====================layer {}====================\n".format(layer_n)

@@ -271,9 +271,9 @@ def evaluate_mitigation():
     model_names = [
         "mistral",
         "llama-2",
-        "llama-3",
+        #"llama-3",
         "vicuna-7b",
-        "vicuna-13b",
+        #"vicuna-13b",
     ]
     for model_name in model_names:
         # Load data

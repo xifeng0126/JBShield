@@ -1,1 +1,1 @@
-python mitigation.py > ./logs/JBShield-M.log
+python mitigation.py > ./test_logs/JBShield-M.log
