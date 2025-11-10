@@ -12,7 +12,7 @@ from utils import interpret_difference_matrix
 from utils import cosine_similarity
 
 
-
+# 寻找关键层（cosine similarity最小的层）
 def find_critical_layer(embeddings1, embeddings2):
     '''
     Find the layer with the minimum average cosine similarity between the two sets of embeddings
@@ -58,7 +58,7 @@ def find_critical_layer(embeddings1, embeddings2):
 
     return cosine_similarities, seleced_layer_index
 
-
+# 基于ROC曲线计算最佳阈值区分两组余弦相似度分数
 def get_thershold(scores1, scores2):
     '''
     Get the optimal threshold for the given scores
@@ -89,6 +89,7 @@ def get_thershold(scores1, scores2):
     return optimal_threshold
 
 
+# 基于ROC曲线计算最佳阈值区分两组embedding
 def find_optimal_threshold(model, tokenizer, calibration_embeddings1, calibration_embeddings2, base_calibration_embedding, calibration_vector):
     '''
     Find the optimal threshold to distinguish the two sets of embeddings
@@ -133,6 +134,7 @@ def find_optimal_threshold(model, tokenizer, calibration_embeddings1, calibratio
     thershold = get_thershold(v_cs1, v_cs2)
 
     return thershold
+
 
 
 def detection_judge(model, tokenizer, embeddings1, calibration_embedding, calibration_vector, threshold):
@@ -181,12 +183,14 @@ def detection(model_name, update_vectors=False):
     calibration_harmless_embeddings = get_sentence_embeddings(harmless_prompts_calibration, model, model_name, tokenizer)
     calibration_harmful_embeddings = get_sentence_embeddings(harmful_prompts_calibration, model, model_name, tokenizer)
     # Mean embeddings for harmful and harmless prompts
+    # 构建harmful和harmless均值嵌入向量，用作后续差分计算的基准
     mean_harmful_embedding = []
     mean_harmless_embedding = []
     for i in range(len(calibration_harmless_embeddings)):
         mean_harmful_embedding.append(torch.mean(torch.stack(calibration_harmful_embeddings[i]), dim=0))
         mean_harmless_embedding.append(torch.mean(torch.stack(calibration_harmless_embeddings[i]), dim=0))
     if update_vectors:
+        # 
         # Save mean embeddings for harmful and harmless prompts when the first time to run this script
         torch.save(mean_harmful_embedding, './vectors/{}/mean_harmful_embedding.pt'.format(model_name))
         torch.save(mean_harmless_embedding, './vectors/{}/mean_harmless_embedding.pt'.format(model_name))
@@ -217,7 +221,9 @@ def detection(model_name, update_vectors=False):
     test_zulu_embeddings = get_sentence_embeddings(jailbreak_prompts_test['zulu'], model, model_name, tokenizer)
 
 
-    # Find the critical layers
+    # 寻找关键层
+    # 基于harmful和harmless校准集寻找检测有害概念的关键层
+    # 基于jailbreak和harmful校准集寻找在不同类型数据集上检测jailbreak概念的关键层
     _, seleced_safety_layer_index = find_critical_layer(calibration_harmful_embeddings, calibration_harmless_embeddings)
     print("Selected layer index for toxic concept detection: {}".format(seleced_safety_layer_index))
     _, seleced_jailbreak_layer_index_gcg = find_critical_layer(calibration_gcg_embeddings, calibration_harmful_embeddings)
@@ -240,7 +246,7 @@ def detection(model_name, update_vectors=False):
     print("Selected layer index for zulu jailbreak concept detection: {}".format(seleced_jailbreak_layer_index_zulu))
     
 
-    # Get calibration vectors and thersholds
+    # 得到锚定向量 表示 有害概念和越狱概念，后续用于计算余弦相似度进行判别
     print("Get calibration vectors and thersholds...")
     calibration_safety_vector, delta_safety = interpret_difference_matrix(
         model,
@@ -408,11 +414,15 @@ def detection(model_name, update_vectors=False):
         )
         if update_vectors:
             # Save thersholds for mitigation when the first time to run this script
+            # 阈值向量存储为后续缓解使用
+            # todo
             if idx_calibration == idx_test:
                 torch.save(thershold_safety, './vectors/{}/thershold_safety_{}.pt'.format(model_name, jailbreaks[idx_calibration]))
                 torch.save(thershold_jailbreak, './vectors/{}/thershold_jailbreak_{}.pt'.format(model_name, jailbreaks[idx_calibration]))
         # Detect the jailbreak prompts
+        # 判别越狱提示
         print("Num of test jailbreak prompts: ", len(test_embedding[seleced_safety_layer_index]))
+        # 检测有害提示
         results_safety = detection_judge(
             model,
             tokenizer,
@@ -421,6 +431,7 @@ def detection(model_name, update_vectors=False):
             calibration_safety_vector,
             thershold_safety,
         )
+        # 检测越狱提示
         results_jailbreak = detection_judge(
             model,
             tokenizer,

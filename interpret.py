@@ -3,6 +3,8 @@ import json
 from tqdm import tqdm
 
 import nltk
+# toxic、 jailbreak概念提取
+
 # Download when running for the first time
 nltk.download('words')
 

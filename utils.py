@@ -257,7 +257,7 @@ def get_output_prompt(
     gc.collect()
     return output_prompt
 
-
+# 返回提示列表在每一层的句子嵌入
 def get_sentence_embeddings(prompts, model, model_name, tokenizer):
     """
     Get sentence embeddings for each layer of the model
